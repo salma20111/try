@@ -1,0 +1,22 @@
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search input {
+  padding: 8px 15px;
+  border: 1px solid var(--color-two);
+  border-radius: 5px;
+  transition: 0.3s;
+}
+
+.search input:focus {
+  outline: none;
+  box-shadow: 0px 0px 6px var(--color-two);
+}
+
+.table {
+  width: 100%;
+  overflow: auto;
+}

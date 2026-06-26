@@ -1,0 +1,4 @@
+.active {
+  color: var(--red);
+  transition: var(--transition);
+}

@@ -1,0 +1,30 @@
+.form-input {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.form-input label {
+  color: var(--color-two);
+}
+
+.form-input input,
+.form-input textarea {
+  padding: 5px 10px;
+  outline: none;
+  border: 1px solid var(--color-two);
+  border-radius: 5px;
+}
+
+.form-input textarea {
+  resize: none;
+  width: 100%;
+  field-sizing: content;
+  min-height: 60px;
+}
+
+.error {
+  color: var(--red);
+  text-align: right;
+  height: 5px;
+}
