@@ -6,6 +6,7 @@
 
 .form-input label {
   color: var(--color-two);
+  padding-left: 15px;
 }
 
 .form-input input,
@@ -27,4 +28,5 @@
   color: var(--red);
   text-align: right;
   height: 5px;
+  font-size: 12px;
 }

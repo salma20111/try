@@ -1,187 +1,137 @@
 "use client";
 
-import { isEmail, isPast, minLength } from "@/helpers/validators";
-import { useState } from "react";
+import { isEmail, isPast, minLength, theSame } from "@/helpers/validators";
+import { useMemo, useState } from "react";
+import Input from "../UiElements/Input";
+import Button from "../UiElements/Button";
 
-const formValidators = {name:minLength, email: isEmail ,birthdate:isPast} 
+const formValidators = {
+  name: minLength,
+  email: isEmail,
+  birthdate: isPast,
+  password: minLength,
+  passwordConfirm: theSame,
+};
 
 const SignUp = () => {
- 
-const [formState, setFormState] = useState({
-  name: {value: "", isValid: false, touched: false},
-  email: {value: "", isValid: false, touched: false},
-//   password: {value: "", isValid: false, touched: false},
-//   confPassword: {value: "", isValid: false, touched: false},
-  birthdate: {value: "", isValid: false, touched: false},
-});
+  // name email birthdate password passwordConfirm
+  const [formState, setFormState] = useState({
+    name: { value: "", isValid: false, touched: false },
+    email: { value: "", isValid: false, touched: false },
+    birthdate: { value: "", isValid: false, touched: false },
+    password: { value: "", isValid: false, touched: false },
+    passwordConfirm: { value: "", isValid: false, touched: false },
+  });
 
+  const handleInputChange = (e) => {
+    const { value, name } = e.target;
 
-
-
-
-const handleInputChange = (e) => {
-  const { value, name } = e.target;
-  console.log(value)
-  setFormState((prev) => ({
-    ...prev,
-    [name]: {...prev[name], value: value, isvalid: formValidators[name][value,3],
-    },
-  }))
-}
-
-const handelInputTouch = (e) => {
-    const { name } = e.target;
     setFormState((prev) => ({
-        ...prev,
-        [name]: {...prev[name], touched: true},
-    }))}
-//  IMP    varisble as key => [key]
-  
-
-    const [password, setPassword] = useState({
-    value: "",
-    isValid: false,
-    touched: false,
-  });
-
-  const [confPassword, setConfPassword] = useState({
-    value: "",
-    isValid: false,
-    touched: false,
-  });
-
-
-//    const [birthdate, setBirthdate] = useState({
-//     value: "",
-//     isValid: false,
-//     touched: false,
-//   });
-
-
-
-
-   const handlePasswordChange = (e) => {
-    setPassword((prev) => ({
       ...prev,
-      value: e.target.value,
-      isValid: e.target.value.trim().length >= 7, 
+      [name]: {
+        ...prev[name],
+        value,
+        isValid: formValidators[name]({
+          value,
+          value2: prev.password.value,
+          min: name === "name" ? 3 : name === "password" ? 6 : 0,
+        }),
+      },
     }));
   };
 
-   const handleConfPassChange = (e) => {
-    setConfPassword((prev) => ({
+  const handleInputTouch = (e) => {
+    const { name } = e.target;
+
+    setFormState((prev) => ({
       ...prev,
-      value: e.target.value,
-      isValid: e.target.value === password.value , 
+      [name]: { ...prev[name], touched: true },
     }));
   };
 
+  // console.log(formState);
 
-     const  handleBirthdateChange = (e) => {
-    const today = new Date().toISOString().split("T")[0]; 
-    setBirthdate((prev) => ({
-      ...prev,
-      value: e.target.value,
-      isValid: e.target.value !== today, 
-    }));
-  };
-
-
-  const handlePassTouched = () => {
-    setPassword((prev) => ({ ...prev, touched: true }));
-  };
-
-  const handleConfPassTouched = () => {
-    setConfPassword((prev) => ({ ...prev, touched: true }));
-  };
-
-    const handleBirthdateTouched = () => {
-    setBirthdate((prev) => ({ ...prev, touched: true }));
-  };
+  const formIsValid = useMemo(
+    () => Object.keys(formState).every((el) => formState[el].isValid),
+    [formState],
+  );
+  console.log(formIsValid);
 
   return (
     <form>
       <h3>Create New Account</h3>
-      <div>
-        <label htmlFor="name">Full Name</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          placeholder="Write your full name"
-          value={formState.name.value}
-          onChange={handleInputChange}
-          onBlur={handelInputTouch}
-        />
-        <p>
-          {!formState.name.isValid && formState.name.touched
-            ? "Name should be at least 3 chars"
-            : ""}
-        </p>
-      </div>
+      <Input
+        id="name"
+        type="text"
+        name="name"
+        label="Full Name"
+        placeholder="Write your full name"
+        errorText="Name should be at least 3 chars"
+        inputState={formState.name}
+        onChange={handleInputChange}
+        onBlur={handleInputTouch}
+      />
 
-      <div>
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Write your email"
-          value={formState.email.value}
-          onChange={handleInputChange}
-          onBlur={handelInputTouch}
-        />
-        <p>
-          {!formState.email.isValid && formState.email.touched
-            ? "Please provide a valid email"
-            : ""}
-        </p>
-      </div>
+      <Input
+        id="email"
+        type="email"
+        name="email"
+        label="Your Email"
+        placeholder="write an exist email"
+        errorText="Please provide a valid email"
+        inputState={formState.email}
+        onChange={handleInputChange}
+        onBlur={handleInputTouch}
+      />
 
-      
-      <div>
-        <label htmlFor="pass">Password</label>
-        <input
-          type="password"
-          id="password"
-          name="pass"
-          placeholder="Write your password correctly"
-          value={password.value}
-          onChange={handlePasswordChange}
-          onBlur={handlePassTouched}
-        />
-        <p>{!password.isValid && password.touched ? "Password should be at least 6 chars" : ""}</p>
-      </div>
+      <Input
+        id="birthdate"
+        type="date"
+        name="birthdate"
+        label="Birthdate"
+        errorText="Please provide a valid birthdate"
+        inputState={formState.birthdate}
+        onChange={handleInputChange}
+        onBlur={handleInputTouch}
+      />
 
-       <div>
-        <label htmlFor="confPass">Confirm Password</label>
-        <input
-          type="password"
-          id="confpassword"
-          name="confPassword"
-          placeholder="Write your password confirm"
-          value={confPassword.value}
-          onChange={handleConfPassTouched}
-          onBlur={handleConfPassTouched}
-          
-        />
-        <p>{!confPassword.isValid && confPassword.touched ? "Passwords must match" : ""}</p>
-      </div>
+      <Input
+        id="password"
+        type="password"
+        name="password"
+        label="Password"
+        errorText="Password should be at least 6 chars"
+        placeholder="*********"
+        inputState={formState.password}
+        onChange={handleInputChange}
+        onBlur={handleInputTouch}
+      />
 
-      <div>
-        <label htmlFor="birthdate">Birthdate</label>
-        <input
-          type="date"
-          id="birthdate"
-          name="birthdate"
-          value={formState.birthdate.value}
-          onChange={handleInputChange}
-          onBlur={handelInputTouch}
-        />
-        <p>{!formState.birthdate.isValid && formState.birthdate.touched ? "Birthdate cannot be today" : ""}</p>
-      </div>
+      <Input
+        id="passwordConfirm"
+        type="password"
+        name="passwordConfirm"
+        label="Password Confirm"
+        errorText="Passwords are not the same"
+        placeholder="*********"
+        inputState={formState.passwordConfirm}
+        onChange={handleInputChange}
+        onBlur={handleInputTouch}
+      />
+
+      <Button disabled={!formIsValid} onClick={() => {}}>
+        Sign Up
+      </Button>
     </form>
   );
 };
 
 export default SignUp;
+
+
+// some  بتعدي علي واحد وتحد 
+// every كلهم بس لازم كلهم يبقوا true 
+// use memo is a reavt hook  بس لما ال form state تتغير 
+//  IMP    varisble as key => [key]
+// we cam go inside prev 
+  
