@@ -1,55 +1,29 @@
 "use client";
 
-import { useState } from "react";
-
 import Button from "../UiElements/Button";
-import { isEmail, isEmpty, minLength } from "@/helpers/validators";
+import { isEmail, minLength } from "@/helpers/validators";
 import Input from "../UiElements/Input";
+import useForm from "@/hooks/useForm";
 
 import classes from "./ContactForm.module.css";
 
-/*
-  - name
-  - email
-  - password
-  - password confirm
-  - birthdate
+const formValidators = { name: minLength, email: isEmail, subject: minLength };
 
-  - Sign up button
-*/
+const initialState = {
+  name: { value: "", isValid: false, touched: false },
+  email: { value: "", isValid: false, touched: false },
+  subject: { value: "", isValid: false, touched: false },
+};
 
 export default function ContactForm() {
-  const [name, setName] = useState("");
-  const [nameError, setNameError] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [subjectError, setSubjectError] = useState(false);
+  const { formState, handleChange, handleTouch, formIsValid } = useForm({
+    initialState,
+    formValidators,
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // send to an api
-    console.log(name, email, subject);
-    if (isEmpty(name) || !isEmail(email) || !minLength(subject)) {
-      if (isEmpty(name)) {
-        setNameError(true);
-      }
-
-      if (!isEmail(email)) {
-        setEmailError(true);
-      }
-
-      if (!minLength(subject)) {
-        setSubjectError(true);
-      }
-
-      return;
-    }
-
-    setName("");
-    setEmail("");
-    setSubject("");
+    console.log("sent");
   };
 
   return (
@@ -58,50 +32,45 @@ export default function ContactForm() {
 
       <Input
         id="name"
+        name="name"
         type="text"
         label="Name"
         placeholder="Write a valid name!"
-        value={name}
-        error={nameError}
+        inputState={formState.name}
         errorText="Please provide a valid name!"
-        onChange={(e) => {
-          const { value } = e.target;
-          setName(value);
-          if (!isEmpty(value)) setNameError(false);
-        }}
+        onChange={handleChange}
+        onBlur={handleTouch}
+        minLength={3}
       />
 
       <Input
         id="email"
+        name="email"
         type="email"
         label="Email"
         placeholder="Write a valid email"
-        value={email}
-        error={emailError}
+        inputState={formState.email}
         errorText="Please provide a valid email!"
-        onChange={(e) => {
-          const { value } = e.target;
-          setEmail(value);
-          if (isEmail(value)) setEmailError(false);
-        }}
+        onChange={handleChange}
+        onBlur={handleTouch}
       />
 
       <Input
         id="subject"
+        name="subject"
         type="textarea"
         label="Subject"
         placeholder="Write the subject in details"
-        value={subject}
-        error={subjectError}
+        inputState={formState.subject}
         errorText="Subject should be at least 5 chars!"
-        onChange={(e) => {
-          const { value } = e.target;
-          setSubject(value);
-          if (minLength(value)) setSubjectError(false);
-        }}
+        onChange={handleChange}
+        onBlur={handleTouch}
+        minLength={5}
       />
 
-      <Button className={classes["btn"]}>Send</Button>
+      <Button disabled={!formIsValid} className={classes["btn"]}>
+        Send
+      </Button>
     </form>
   );
 }
