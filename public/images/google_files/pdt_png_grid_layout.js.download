@@ -1,0 +1,153 @@
+(function () {
+  var grid = document.querySelector("#similar-png .png-grid");
+  var layoutFrame = 0;
+
+  function ratioOf(img) {
+    if (!img) return 1;
+    var ratio = String(img.getAttribute("ratio") || "").split(":").map(Number);
+    if (ratio.length === 2 && ratio[0] > 0 && ratio[1] > 0) return ratio[0] / ratio[1];
+    var width = parseFloat(img.getAttribute("width") || "0");
+    var height = parseFloat(img.getAttribute("height") || "0");
+    return width > 0 && height > 0 ? width / height : 1;
+  }
+
+  function targetHeight(width) {
+    if (window.innerWidth < 640) return Math.max(112, Math.min(156, Math.round(width / 4.1)));
+    return Math.max(160, Math.min(220, Math.round(width / 7.5)));
+  }
+
+  function rowWidth(items, height, gap) {
+    var width = gap * Math.max(0, items.length - 1);
+    items.forEach(function (item) { width += item.layoutRatio * height; });
+    return width;
+  }
+
+  function distribute(items, width) {
+    var total = items.reduce(function (sum, item) { return sum + item.layoutRatio; }, 0);
+    var exact = items.map(function (item) { return width * item.layoutRatio / total; });
+    var base = exact.map(Math.floor);
+    var remaining = Math.max(0, Math.round(width - base.reduce(function (sum, value) { return sum + value; }, 0)));
+    exact.map(function (value, index) { return { index: index, fraction: value - Math.floor(value) }; })
+      .sort(function (a, b) { return b.fraction - a.fraction; })
+      .forEach(function (item) {
+        if (remaining <= 0) return;
+        base[item.index] += 1;
+        remaining -= 1;
+      });
+    return base;
+  }
+
+  function apply(items, height, width, justify) {
+    var resolvedHeight = justify ? width / items.reduce(function (sum, item) { return sum + item.layoutRatio; }, 0) : height;
+    var widths = justify ? distribute(items, width) : items.map(function (item) { return Math.round(item.layoutRatio * resolvedHeight); });
+    items.forEach(function (item, index) {
+      var articleWidth = widths[index];
+      var mediaHeight = Math.round(resolvedHeight);
+      var imgWidth = item.isExtreme ? Math.min(articleWidth, Math.max(mediaHeight * 0.7, Math.min(mediaHeight * 2, item.actualRatio * mediaHeight))) : articleWidth;
+      item.article.style.width = articleWidth + "px";
+      item.article.classList.toggle("is-constrained", item.isExtreme);
+      item.link.style.width = articleWidth + "px";
+      item.link.style.height = mediaHeight + "px";
+      item.link.classList.toggle("is-constrained", item.isExtreme);
+      item.image.style.width = Math.round(imgWidth) + "px";
+      item.image.style.height = mediaHeight + "px";
+      item.image.style.objectFit = item.isExtreme ? "contain" : "cover";
+    });
+  }
+
+  function layout(attempt) {
+    var width = grid.clientWidth;
+    if (!width) {
+      if (attempt < 10) scheduleLayout(attempt + 1);
+      return;
+    }
+    var style = window.getComputedStyle(grid);
+    var gap = parseFloat(style.columnGap || style.gap || "12") || 12;
+    var rowGap = parseFloat(style.rowGap || style.gap || "12") || gap;
+    var height = targetHeight(width);
+    var items = Array.prototype.slice.call(grid.querySelectorAll("article")).map(function (article) {
+      var link = article.querySelector(".png-thumb");
+      var image = link && link.querySelector("img");
+      if (!link || !image) return null;
+      var actualRatio = ratioOf(image);
+      return {
+        article: article,
+        link: link,
+        image: image,
+        actualRatio: actualRatio,
+        layoutRatio: Math.max(0.7, Math.min(2, actualRatio)),
+        isExtreme: actualRatio < 0.7 || actualRatio > 2
+      };
+    }).filter(Boolean);
+    if (!items.length) return;
+
+    var rows = [];
+    var row = [];
+    items.forEach(function (item) {
+      var next = row.concat(item);
+      var projected = rowWidth(next, height, gap);
+      if (row.length && projected >= width) {
+        var current = rowWidth(row, height, gap);
+        if (Math.abs(projected - width) <= Math.abs(width - current) || row.length === 1) {
+          row.push(item);
+          rows.push({ items: row.slice(), justify: true });
+          row = [];
+        } else {
+          rows.push({ items: row.slice(), justify: true });
+          row = [item];
+        }
+        return;
+      }
+      row.push(item);
+    });
+    if (row.length) rows.push({ items: row.slice(), justify: false });
+
+    var fragment = document.createDocumentFragment();
+    rows.forEach(function (entry) {
+      apply(entry.items, height, width - gap * Math.max(0, entry.items.length - 1), entry.justify);
+      var rowElement = document.createElement("div");
+      rowElement.className = "png-row";
+      rowElement.style.gap = gap + "px";
+      entry.items.forEach(function (item) { rowElement.appendChild(item.article); });
+      fragment.appendChild(rowElement);
+    });
+    grid.style.gap = rowGap + "px";
+    grid.replaceChildren(fragment);
+    grid.classList.add("is-layout-ready");
+  }
+
+  function scheduleLayout(attempt) {
+    window.cancelAnimationFrame(layoutFrame);
+    layoutFrame = window.requestAnimationFrame(function () { layout(attempt || 0); });
+  }
+
+  function initPngGridLayout() {
+    if (!grid) return;
+    grid.setAttribute("data-cleanpng-grid-managed", "pdt");
+    scheduleLayout(0);
+    window.addEventListener("resize", function () { scheduleLayout(0); });
+  }
+
+  function initDetailsToggle() {
+    var toggleButton = document.getElementById("details-toggle");
+    var toggleLabel = document.getElementById("details-toggle-label");
+    var toggleIcon = document.getElementById("details-toggle-icon");
+    var extraContent = document.getElementById("details-extra");
+    if (!toggleButton || !toggleLabel || !toggleIcon || !extraContent) return;
+    toggleButton.addEventListener("click", function () {
+      var isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+      var nextExpanded = !isExpanded;
+      toggleButton.setAttribute("aria-expanded", nextExpanded ? "true" : "false");
+      extraContent.classList.toggle("hidden", !nextExpanded);
+      toggleIcon.classList.toggle("rotate-180", nextExpanded);
+      toggleLabel.textContent = nextExpanded ? "Show less" : "Show more";
+    });
+  }
+
+  initPngGridLayout();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDetailsToggle, { once: true });
+  } else {
+    initDetailsToggle();
+  }
+})();

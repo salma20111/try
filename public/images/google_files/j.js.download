@@ -1,0 +1,341 @@
+(() => {
+  if (window.__cleanpngHeaderJsLoaded) {
+    return;
+  }
+  window.__cleanpngHeaderJsLoaded = true;
+
+  const siteHeader = document.getElementById("site-header");
+  const desktopNav = document.getElementById("desktop-nav");
+  const headerLinks = document.getElementById("header-links");
+  const headerSearchWrap = document.getElementById("header-search-wrap");
+  const headerSearch = document.getElementById("header-search");
+  const headerSearchButton = document.getElementById("header-search-button");
+  const heroSearch = document.getElementById("hero-search");
+  const heroSearchButton = document.getElementById("hero-search-button");
+  const mobileInlineSearch = document.getElementById("mobile-inline-search");
+  const mobileInlineSearchButton = document.getElementById("mobile-inline-search-button");
+  const mobileSearch = document.getElementById("mobile-search");
+  const mobileSearchButton = document.getElementById("mobile-search-button");
+  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+  const mobileMenu = document.getElementById("mobile-menu");
+  const mobileMenuOpenIcon = document.getElementById("mobile-menu-open-icon");
+  const mobileMenuCloseIcon = document.getElementById("mobile-menu-close-icon");
+  const pngGrid = document.querySelector(".png-grid");
+  const pngGridRootMargin = typeof window.__cleanpngPngGridRootMargin === "string" ? window.__cleanpngPngGridRootMargin : "900px 0px";
+  let wasDesktopViewport = window.innerWidth >= 768;
+  let pngLayoutFrame = 0;
+  let pngLayoutStarted = false;
+  let pngLayoutObserver = null;
+
+  function performSearch(query) {
+    if (!query) return;
+    var searchTerm = query.toLowerCase().replace(/\s{2,}/g, " ").trim();
+    if (searchTerm === "") return;
+
+    var words = searchTerm.split(" ");
+    if (words.length > 10) {
+      words = words.filter(function (word) {
+        var w = word.toLowerCase();
+        return w !== "with" && w !== "in" && w !== "of" && w !== "and";
+      });
+      if (words.length > 10) {
+        words = words.slice(0, 10);
+      }
+      if (words.length === 0) return;
+    }
+
+    var slug = words
+      .map(function (word) {
+        return word.replace(/'/g, "");
+      })
+      .join("-");
+
+    if (slug && slug !== "search-png-images") {
+      window.location.href = "/free/" + slug + ".html";
+    }
+  }
+
+  function wireSearch(input, button) {
+    if (!input || !button) return;
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        performSearch(input.value);
+      }
+    });
+    button.addEventListener("click", () => performSearch(input.value));
+  }
+
+  function updateMobileMenuState() {
+    if (!mobileMenuToggle || !mobileMenu) return;
+    const expanded = mobileMenuToggle.getAttribute("aria-expanded") === "true";
+    mobileMenu.classList.toggle("hidden", !expanded);
+    mobileMenuOpenIcon?.classList.toggle("hidden", expanded);
+    mobileMenuCloseIcon?.classList.toggle("hidden", !expanded);
+  }
+
+  function updateHeaderState() {
+    if (!siteHeader || !headerSearchWrap || !headerSearch) return;
+
+    if (window.innerWidth < 768) {
+      siteHeader.classList.remove("header-shadow");
+      if (desktopNav) {
+        desktopNav.style.display = "none";
+      }
+      if (headerLinks) {
+        headerLinks.style.display = "none";
+      }
+      headerSearchWrap.classList.remove("header-search-compact");
+      headerSearch.classList.remove("header-search-input-compact");
+      headerSearch.classList.add("w-[280px]");
+      return;
+    }
+
+    const compact = window.scrollY > 150;
+    siteHeader.classList.toggle("header-shadow", compact);
+    if (desktopNav) {
+      desktopNav.style.display = compact ? "none" : "flex";
+    }
+    if (headerLinks) {
+      headerLinks.style.display = compact ? "none" : "flex";
+    }
+    headerSearchWrap.classList.toggle("header-search-compact", compact);
+    headerSearch.classList.toggle("header-search-input-compact", compact);
+    headerSearch.classList.toggle("w-[280px]", !compact);
+  }
+
+  function syncViewportState() {
+    const isDesktopViewport = window.innerWidth >= 768;
+    if (wasDesktopViewport !== isDesktopViewport) {
+      mobileMenuToggle?.setAttribute("aria-expanded", "false");
+      updateMobileMenuState();
+      wasDesktopViewport = isDesktopViewport;
+    }
+    updateHeaderState();
+    if (pngLayoutStarted) {
+      schedulePngLayout();
+    }
+  }
+
+  function parseRatio(value) {
+    const parts = String(value || "").split(":").map(Number);
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    return parts[0] / parts[1];
+  }
+
+  function getImageRatio(image) {
+    if (!image) return 1;
+    const ratioFromAttr = parseRatio(image.getAttribute("ratio"));
+    if (ratioFromAttr) return ratioFromAttr;
+
+    const width = Number.parseFloat(image.getAttribute("width") || "0");
+    const height = Number.parseFloat(image.getAttribute("height") || "0");
+    if (width > 0 && height > 0) {
+      return width / height;
+    }
+
+    return 1;
+  }
+
+  function getTargetRowHeight(containerWidth) {
+    if (window.innerWidth < 640) {
+      return Math.max(112, Math.min(156, Math.round(containerWidth / 4.1)));
+    }
+
+    return Math.max(160, Math.min(220, Math.round(containerWidth / 7.5)));
+  }
+
+  function getRowWidthForHeight(items, rowHeight, gap) {
+    if (!items.length) return 0;
+    return items.reduce((sum, item) => sum + item.layoutRatio * rowHeight, 0) + gap * (items.length - 1);
+  }
+
+  function distributeRowWidths(items, rowWidth, rowHeight) {
+    const totalRatio = items.reduce((sum, item) => sum + item.layoutRatio, 0);
+    const exactWidths = items.map((item) => (rowWidth * item.layoutRatio) / totalRatio);
+    const baseWidths = exactWidths.map((width) => Math.floor(width));
+    let remaining = Math.max(0, Math.round(rowWidth - baseWidths.reduce((sum, width) => sum + width, 0)));
+
+    exactWidths
+      .map((width, index) => ({ index, fraction: width - Math.floor(width) }))
+      .sort((a, b) => b.fraction - a.fraction)
+      .forEach(({ index }) => {
+        if (remaining <= 0) return;
+        baseWidths[index] += 1;
+        remaining -= 1;
+      });
+
+    return baseWidths;
+  }
+
+  function applyPngRowLayout(items, rowHeight, rowWidth, justifyRow = true) {
+    if (!items.length) return;
+
+    const totalRatio = items.reduce((sum, item) => sum + item.layoutRatio, 0);
+    const justifiedHeight = rowWidth > 0 ? rowWidth / totalRatio : rowHeight;
+    const resolvedHeight = justifyRow ? justifiedHeight : rowHeight;
+    const articleWidths = justifyRow
+      ? distributeRowWidths(items, rowWidth, resolvedHeight)
+      : items.map((item) => Math.round(item.layoutRatio * resolvedHeight));
+
+    items.forEach((item, index) => {
+      const articleWidth = articleWidths[index];
+      const mediaWidth = articleWidth;
+      const mediaHeight = Math.round(resolvedHeight);
+      const imgWidth = Math.round(
+        item.isExtreme
+          ? Math.min(mediaWidth, Math.max(mediaHeight * 0.7, Math.min(mediaHeight * 2, item.actualRatio * mediaHeight)))
+          : mediaWidth
+      );
+      const imgHeight = mediaHeight;
+
+      item.article.style.width = `${articleWidth}px`;
+      item.article.classList.toggle("is-constrained", item.isExtreme);
+      item.link.style.width = `${mediaWidth}px`;
+      item.link.style.height = `${mediaHeight}px`;
+      item.link.classList.toggle("is-constrained", item.isExtreme);
+      item.image.style.width = `${imgWidth}px`;
+      item.image.style.height = `${imgHeight}px`;
+      item.image.style.objectFit = item.isExtreme ? "contain" : "cover";
+    });
+  }
+
+  function layoutPngGrid() {
+    if (!pngGrid) return;
+
+    const articles = Array.from(pngGrid.querySelectorAll("article"));
+    if (!articles.length) return;
+
+    const gridStyle = window.getComputedStyle(pngGrid);
+    const gap = Number.parseFloat(gridStyle.columnGap || gridStyle.gap || "12") || 12;
+    const rowGap = Number.parseFloat(gridStyle.rowGap || gridStyle.gap || "12") || gap;
+    const containerWidth = pngGrid.clientWidth;
+
+    if (!containerWidth) return;
+
+    const targetRowHeight = getTargetRowHeight(containerWidth);
+    const items = articles
+      .map((article) => {
+        const link = article.querySelector(".png-thumb");
+        const image = link?.querySelector("img");
+        if (!link || !image) return null;
+
+        const actualRatio = getImageRatio(image);
+        const isExtreme = actualRatio < 0.7 || actualRatio > 2;
+        const layoutRatio = Math.max(0.7, Math.min(2, actualRatio));
+
+        return { article, link, image, actualRatio, layoutRatio, isExtreme };
+      })
+      .filter(Boolean);
+
+    const rows = [];
+    let row = [];
+
+    items.forEach((item) => {
+      const nextRow = [...row, item];
+      const projectedWidth = getRowWidthForHeight(nextRow, targetRowHeight, gap);
+
+      if (row.length && projectedWidth >= containerWidth) {
+        const currentWidth = getRowWidthForHeight(row, targetRowHeight, gap);
+        const withItemDelta = Math.abs(projectedWidth - containerWidth);
+        const withoutItemDelta = Math.abs(containerWidth - currentWidth);
+
+        if (withItemDelta <= withoutItemDelta || row.length === 1) {
+          row.push(item);
+          rows.push({ items: [...row], justify: true });
+          row = [];
+          return;
+        }
+
+        rows.push({ items: [...row], justify: true });
+        row = [item];
+        return;
+      }
+
+      row.push(item);
+    });
+
+    if (row.length) {
+      rows.push({ items: [...row], justify: false });
+    }
+
+    const fragment = document.createDocumentFragment();
+    rows.forEach(({ items: rowItems, justify }) => {
+      applyPngRowLayout(rowItems, targetRowHeight, containerWidth - gap * (rowItems.length - 1), justify);
+
+      const rowElement = document.createElement("div");
+      rowElement.className = "png-row";
+      rowElement.style.gap = `${gap}px`;
+
+      rowItems.forEach((item) => rowElement.appendChild(item.article));
+      fragment.appendChild(rowElement);
+    });
+
+    pngGrid.style.gap = `${rowGap}px`;
+    pngGrid.replaceChildren(fragment);
+    pngGrid.classList.add("is-layout-ready");
+  }
+
+  function schedulePngLayout() {
+    if (!pngGrid) return;
+    window.cancelAnimationFrame(pngLayoutFrame);
+    pngLayoutFrame = window.requestAnimationFrame(layoutPngGrid);
+  }
+
+  function startPngLayout() {
+    if (!pngGrid || pngLayoutStarted) return;
+    pngLayoutStarted = true;
+    pngLayoutObserver?.disconnect();
+    schedulePngLayout();
+  }
+
+  function initPngLayout() {
+    if (!pngGrid) return;
+    if (!("IntersectionObserver" in window)) {
+      startPngLayout();
+      return;
+    }
+
+    pngLayoutObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          startPngLayout();
+        }
+      },
+      { rootMargin: pngGridRootMargin }
+    );
+    pngLayoutObserver.observe(pngGrid);
+  }
+
+  mobileMenuToggle?.addEventListener("click", () => {
+    const expanded = mobileMenuToggle.getAttribute("aria-expanded") === "true";
+    mobileMenuToggle.setAttribute("aria-expanded", String(!expanded));
+    updateMobileMenuState();
+  });
+
+  document.querySelectorAll(".faq-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const answer = button.parentElement.querySelector(".faq-answer");
+      const icon = button.querySelector(".faq-icon");
+      const isOpen = !answer.classList.contains("hidden");
+
+      document.querySelectorAll(".faq-answer").forEach((item) => item.classList.add("hidden"));
+      document.querySelectorAll(".faq-icon").forEach((item) => item.classList.remove("rotate-180"));
+
+      if (!isOpen) {
+        answer.classList.remove("hidden");
+        icon.classList.add("rotate-180");
+      }
+    });
+  });
+
+  syncViewportState();
+  updateMobileMenuState();
+  initPngLayout();
+  window.addEventListener("resize", syncViewportState);
+  window.addEventListener("scroll", updateHeaderState);
+
+  wireSearch(heroSearch, heroSearchButton);
+  wireSearch(headerSearch, headerSearchButton);
+  wireSearch(mobileInlineSearch, mobileInlineSearchButton);
+  wireSearch(mobileSearch, mobileSearchButton);
+})();

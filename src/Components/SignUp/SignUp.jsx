@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import Input from "../UiElements/Input";
 import Button from "../UiElements/Button";
 import useForm from "@/hooks/useForm";
+import classes from "./signUp.module.css";
 
 const formValidators = {
   name: minLength,
@@ -34,8 +35,8 @@ const SignUp = () => {
   },[]);
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h3>Create New Account</h3>
+    <form className={classes["form"]} onSubmit={handleSubmit}>
+      <h2 className={classes["title"]}>Create New Account</h2>
       <Input
         id="name"
         type="text"
