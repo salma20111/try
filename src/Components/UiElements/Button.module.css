@@ -49,3 +49,8 @@
   background-color: #ccc;
   color: #777;
 }
+
+.success {
+  background-color: var(--green);
+  border-color: var(--green);
+}
