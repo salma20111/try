@@ -4,6 +4,7 @@ import { useReducer, useState } from "react";
 import Button from "@/Components/UiElements/Button";
 
 import classes from "./page.module.css";
+import CountDown from "@/Components/Timers/countDown";
 const initialState = 0;
 const MAX = 10;
 const MIN = 0;
@@ -57,6 +58,9 @@ export default function BlogPage() {
           </Button>
         </section>
       </div>
+
+      <CountDown duration ={20_000} running />
+
 
       <br />
       <hr />

@@ -5,9 +5,13 @@ import NavLink from "./NavLink";
 import { useState } from "react";
 
 import classes from "./Navbar.module.css";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function Navbar() {
   const [showNavList, setShowNavList] = useState(false);
+  const { theme , toggleTheme } = useTheme();
+  console.log(theme, toggleTheme);
+
 
   const toggleNavList = () => setShowNavList(!showNavList);
   const hideNavList = () => setShowNavList(false);
@@ -17,6 +21,8 @@ export default function Navbar() {
       <h1 onClick={hideNavList}>
         <Link href="/">Mo Blog</Link>
       </h1>
+
+      <button onClick={toggleTheme} className={classes['themeBtn']}>{theme === 'light' ? "Dark" : 'Light'}</button>
 
       <ul
         className={`${classes["nav-list"]} ${
@@ -28,6 +34,8 @@ export default function Navbar() {
         <NavLink href="/about" text="About" hideNavList={hideNavList} />
         <NavLink href="/contacts" text="Contacts" hideNavList={hideNavList} />
         <NavLink href="/login" text="Login" hideNavList={hideNavList} />
+
+        
       </ul>
 
       <button

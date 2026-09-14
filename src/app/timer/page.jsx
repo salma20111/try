@@ -11,7 +11,7 @@ export default function TimerPage() {
     return( 
         <div>
             <StopWatch />
-            <CountDown />
+            <CountDown control />
         </div>
     )
 }

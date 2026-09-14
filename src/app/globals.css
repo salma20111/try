@@ -16,6 +16,15 @@
   --green: #22bb33;
 }
 
+.dark {
+  --white: #171717;
+  --black: #fff;
+  --color-one: #e3e3e3;
+  --color-two: #373535;
+  --color-three: #222;
+   --gray: #222;
+}
+
 a {
   color: inherit;
   text-decoration: none;

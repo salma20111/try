@@ -99,3 +99,12 @@
     gap: 20px;
   }
 }
+
+.themeBtn {
+  background-color: transparent;
+  color: var(--color-three);
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+
+}
