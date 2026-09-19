@@ -1,5 +1,8 @@
 "use client";
 
+import { MdOutlineLightMode } from "react-icons/md";
+import { IoMoonOutline } from "react-icons/io5";
+
 import Link from "next/link";
 import NavLink from "./NavLink";
 import { useState } from "react";
@@ -17,12 +20,13 @@ export default function Navbar() {
   const hideNavList = () => setShowNavList(false);
 
   return (
+
     <nav className={classes["nav-bar"]}>
       <h1 onClick={hideNavList}>
         <Link href="/">Mo Blog</Link>
       </h1>
 
-      <button onClick={toggleTheme} className={classes['themeBtn']}>{theme === 'light' ? "Dark" : 'Light'}</button>
+      <button onClick={toggleTheme} className={classes['themeBtn']}>{theme === 'light' ? <IoMoonOutline /> : <MdOutlineLightMode />}</button>
 
       <ul
         className={`${classes["nav-list"]} ${
@@ -34,6 +38,7 @@ export default function Navbar() {
         <NavLink href="/about" text="About" hideNavList={hideNavList} />
         <NavLink href="/contacts" text="Contacts" hideNavList={hideNavList} />
         <NavLink href="/login" text="Login" hideNavList={hideNavList} />
+        <NavLink href="/sign-up" text="SignUp" hideNavList={hideNavList} />
 
         
       </ul>

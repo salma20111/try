@@ -104,7 +104,8 @@
   background-color: transparent;
   color: var(--color-three);
   border: none;
-  font-size: 18px;
+  font-size: 24px;
   cursor: pointer;
-
+  font-weight: bold;
+  display: flex;
 }

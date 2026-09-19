@@ -7,37 +7,50 @@ import Button from "../UiElements/Button";
 import useForm from "@/hooks/useForm";
 import classes from "./signUp.module.css";
 
-const formValidators = {
-  name: minLength,
-  email: isEmail,
-  birthdate: isPast,
-  password: minLength,
-  passwordConfirm: theSame,
-};
-
-const  initialState = {
-    name: { value: "", isValid: false, touched: false },
-    email: { value: "", isValid: false, touched: false },
-    birthdate: { value: "", isValid: false, touched: false },
-    password: { value: "", isValid: false, touched: false },
-    passwordConfirm: { value: "", isValid: false, touched: false },
-  }
-
-const SignUp = () => {
+const SignUp = ({ login }) => {
+  
+  const formValidators = {
+    name: minLength,
+    email: isEmail,
+    birthdate: isPast,
+    password: minLength,
+    passwordConfirm: theSame,
+  };
+  
+  const  initialState = {
+      name: { value: "", isValid: false, touched: false },
+      email: { value: "", isValid: false, touched: false },
+      birthdate: { value: "", isValid: false, touched: false },
+      password: { value: "", isValid: false, touched: false },
+      passwordConfirm: { value: "", isValid: false, touched: false },
+    }
   // name email birthdate password passwordConfirm
  
+
+  if( login ) {
+    delete formValidators["name"];
+    delete formValidators["birthdate"];
+    delete formValidators["passwordConfirm"];
+    delete initialState["name"];
+    delete initialState["birthdate"];
+    delete initialState["passwordConfirm"];
+  }
+
+
   const {formState, handleChange, handleTouch, formIsValid} = useForm({initialState, formValidators})
 
 
   const handleSubmit = useCallback((e) => {
-    e.preventDefault();
-    console.log("salma")
+    e.preventDefault();//prevent refresh page
+    console.log("sent")
   },[]);
 
   return (
     <form className={classes["form"]} onSubmit={handleSubmit}>
-      <h2 className={classes["title"]}>Create New Account</h2>
-      <Input
+      <h2 className={classes["title"]}>{login ? "Log in to your account " : "Create New Account"}</h2>
+
+      {!login && (
+        <Input
         id="name"
         type="text"
         name="name"
@@ -49,6 +62,8 @@ const SignUp = () => {
         onBlur={handleTouch}
          minLength={3}
       />
+      )}
+      
 
       <Input
         id="email"
@@ -62,6 +77,7 @@ const SignUp = () => {
         onBlur={handleTouch}
       />
 
+      {!login && (
       <Input
         id="birthdate"
         type="date"
@@ -72,6 +88,7 @@ const SignUp = () => {
         onChange={handleChange}
         onBlur={handleTouch}
       />
+      )}
 
       <Input
         id="password"
@@ -86,6 +103,8 @@ const SignUp = () => {
         onBlur={handleTouch}
       />
 
+      {!login && (
+
       <Input
         id="passwordConfirm"
         type="password"
@@ -97,9 +116,10 @@ const SignUp = () => {
         onChange={handleChange}
         onBlur={handleTouch}
       />
+      )}
 
       <Button disabled={!formIsValid} onClick={handleSubmit}>
-        Sign Up
+       {login ? "Login" :  "Sign Up"}
       </Button>
     </form>
   );
