@@ -6,6 +6,7 @@ import Input from "../UiElements/Input";
 import Button from "../UiElements/Button";
 import useForm from "@/hooks/useForm";
 import classes from "./signUp.module.css";
+import { loginUser } from "@/actions/UsersDB";
 
 const SignUp = ({ login }) => {
   
@@ -40,10 +41,21 @@ const SignUp = ({ login }) => {
   const {formState, handleChange, handleTouch, formIsValid} = useForm({initialState, formValidators})
 
 
-  const handleSubmit = useCallback((e) => {
+  const handleSubmit = 
+    async (e) => {
     e.preventDefault();//prevent refresh page
-    console.log("sent")
-  },[]);
+
+    if (login) {
+       try {
+       const res = loginUser({
+        email: formState.email.value,
+        password: formState.password.value,
+       })
+    } catch(e) {
+      console.log(e);
+    }
+    }
+  };
 
   return (
     <form className={classes["form"]} onSubmit={handleSubmit}>
@@ -118,7 +130,7 @@ const SignUp = ({ login }) => {
       />
       )}
 
-      <Button disabled={!formIsValid} onClick={handleSubmit}>
+      <Button onClick={handleSubmit}>
        {login ? "Login" :  "Sign Up"}
       </Button>
     </form>
