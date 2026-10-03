@@ -6,9 +6,11 @@ import Input from "../UiElements/Input";
 import Button from "../UiElements/Button";
 import useForm from "@/hooks/useForm";
 import classes from "./signUp.module.css";
-import { loginUser } from "@/actions/UsersDB";
+import { loginUser } from "@/actions/Users";
 
 const SignUp = ({ login }) => {
+
+  const [errorMsg, setErrorMsg] = useState();
   
   const formValidators = {
     name: minLength,
@@ -44,6 +46,7 @@ const SignUp = ({ login }) => {
   const handleSubmit = 
     async (e) => {
     e.preventDefault();//prevent refresh page
+    setErrorMsg("");
 
     if (login) {
        try {
@@ -51,11 +54,16 @@ const SignUp = ({ login }) => {
         email: formState.email.value,
         password: formState.password.value,
        })
+       console.log(res);
     } catch(e) {
-      console.log(e);
+      console.log(e.message || 'Something went wrong!');
+      setErrorMsg(e.message || 'Something went wrong!')
+      console.log(errorMsg)
     }
     }
   };
+
+
 
   return (
     <form className={classes["form"]} onSubmit={handleSubmit}>
@@ -131,9 +139,17 @@ const SignUp = ({ login }) => {
       )}
 
       <Button onClick={handleSubmit}>
+
        {login ? "Login" :  "Sign Up"}
       </Button>
+
+      {errorMsg && (
+        <p onClick={() => setErrorMsg('')} style={{cursor: "pointer"}}>{errorMsg}</p>
+      )}
+
     </form>
+
+
   );
 };
 
