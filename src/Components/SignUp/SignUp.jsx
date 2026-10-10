@@ -7,10 +7,14 @@ import Button from "../UiElements/Button";
 import useForm from "@/hooks/useForm";
 import classes from "./signUp.module.css";
 import { loginUser } from "@/actions/Users";
+import { useUser } from "@/context/UserContext";
+import { useRouter } from "next/navigation";
 
 const SignUp = ({ login }) => {
 
   const [errorMsg, setErrorMsg] = useState();
+  const {setUser} = useUser();
+  const router = useRouter();
   
   const formValidators = {
     name: minLength,
@@ -55,6 +59,9 @@ const SignUp = ({ login }) => {
         password: formState.password.value,
        })
        console.log(res);
+       localStorage.setItem('user', JSON.stringify(res));
+       setUser(res);
+       router.push('/');
     } catch(e) {
       console.log(e.message || 'Something went wrong!');
       setErrorMsg(e.message || 'Something went wrong!')

@@ -20,16 +20,14 @@ export const loginUser = ({email, password}) => {
 
     // very importand : can not search for the user by the password ya salma 
 
-    const passwordCorrect =  usersExist.password === password;
-
-    if(!passwordCorrect) {
+    if(usersExist.password !== password) {
          throw new Error("Password and email does not match!");
     }
 
-    if(usersExist && passwordCorrect) {
-        delete usersExist.password;
-        return usersExist;
-    } 
+    const safeUser = { ...usersExist }
+        delete safeUser.password;
+        return safeUser;
+    
 };
 
 //search user 

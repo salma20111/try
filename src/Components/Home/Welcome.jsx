@@ -1,13 +1,18 @@
+"use client";
+
 import Image from "next/image";
 
 import classes from "./Welcome.module.css";
 import Button from "../UiElements/Button";
+import { useUser } from "@/context/UserContext";
+import { useEffect } from "react";
 
 export default function Welcome() {
-  return (
+  const { user } = useUser();
+    return (
     <section className={classes["welcome"]}>
       <div className={classes["text"]}>
-        <p className={classes["welcome-text"]}>welcome</p>
+        <p className={classes["welcome-text"]}>welcome {user?.name}</p>
         <p className={classes["vision"]}>Learning Web</p>
         <p className={classes["vision"]}>Programming Today</p>
         <p className={classes["desc"]}>

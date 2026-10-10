@@ -9,15 +9,27 @@ import { useState } from "react";
 
 import classes from "./Navbar.module.css";
 import { useTheme } from "@/context/ThemeContext";
+import { useUser } from "@/context/UserContext";
+import { useRouter } from "next/navigation";
+import Button from "../UiElements/Button";
 
 export default function Navbar() {
   const [showNavList, setShowNavList] = useState(false);
   const { theme , toggleTheme } = useTheme();
+  const {user , setUser} = useUser();
+  const router = useRouter();
   console.log(theme, toggleTheme);
 
 
   const toggleNavList = () => setShowNavList(!showNavList);
   const hideNavList = () => setShowNavList(false);
+
+  function handleLogOut() {
+    setUser(null);
+    hideNavList();
+    router.push('/login');
+
+  }
 
   return (
 
@@ -37,8 +49,10 @@ export default function Navbar() {
         <NavLink href="/blog" text="Blog" hideNavList={hideNavList} />
         <NavLink href="/about" text="About" hideNavList={hideNavList} />
         <NavLink href="/contacts" text="Contacts" hideNavList={hideNavList} />
-        <NavLink href="/login" text="Login" hideNavList={hideNavList} />
-        <NavLink href="/sign-up" text="SignUp" hideNavList={hideNavList} />
+
+        {user ? (<Button onClick={handleLogOut} outline>Log Out</Button>) : (<><NavLink href="/login" text="Login" hideNavList={hideNavList} />
+        <NavLink href="/sign-up" text="SignUp" hideNavList={hideNavList} /> </>)}
+        
 
         
       </ul>
